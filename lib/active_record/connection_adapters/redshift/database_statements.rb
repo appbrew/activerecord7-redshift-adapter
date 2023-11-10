@@ -6,7 +6,7 @@ module ActiveRecord
       module DatabaseStatements
         def explain(arel, binds = [])
           sql = "EXPLAIN #{to_sql(arel, binds)}"
-          ExplainPrettyPrinter.new.pp(exec_query(sql, 'EXPLAIN', binds))
+          ExplainPrettyPrinter.new.pp(internal_exec_query(sql, 'EXPLAIN', binds))
         end
 
         class ExplainPrettyPrinter # :nodoc:
@@ -162,7 +162,7 @@ module ActiveRecord
           end
         end
 
-        def exec_query(sql, name = 'SQL', binds = [], prepare: false)
+        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false)
           execute_and_clear(sql, name, binds, prepare: prepare) do |result|
             types = {}
             fields = result.fields
@@ -193,7 +193,7 @@ module ActiveRecord
         end
 
         def exec_insert(sql, name, binds, pk = nil, sequence_name = nil)
-          val = exec_query(sql, name, binds)
+          val = internal_exec_query(sql, name, binds)
           if !use_insert_returning? && pk
             unless sequence_name
               table_ref = extract_table_ref_from_insert_sql(sql)
