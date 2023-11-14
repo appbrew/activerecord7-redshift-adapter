@@ -9,8 +9,9 @@ module ActiveRecord
       mattr_reader :array, default: false
       alias array? array
 
-      def initialize(name, default, sql_type_metadata, null = true, default_function = nil, **)
-        super name, default, sql_type_metadata, null, default_function
+      # identity, generated column type is not supported by Redshift (PostgreSQL 8.0.2)
+      def initialize(*, **)
+        super
       end
     end
   end
