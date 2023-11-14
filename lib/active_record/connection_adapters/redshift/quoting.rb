@@ -4,6 +4,9 @@ module ActiveRecord
   module ConnectionAdapters
     module Redshift
       module Quoting
+        QUOTED_COLUMN_NAMES = Concurrent::Map.new # :nodoc:
+        QUOTED_TABLE_NAMES = Concurrent::Map.new # :nodoc:
+
         # Escapes binary strings for bytea input to the database.
         def escape_bytea(value)
           @connection.escape_bytea(value) if value
@@ -30,7 +33,7 @@ module ActiveRecord
         # - "schema.name".table_name
         # - "schema.name"."table.name"
         def quote_table_name(name)
-          Utils.extract_schema_qualified_name(name.to_s).quoted
+          QUOTED_TABLE_NAMES[name] ||= Utils.extract_schema_qualified_name(name.to_s).quoted
         end
 
         def quote_table_name_for_assignment(_table, attr)
@@ -39,7 +42,7 @@ module ActiveRecord
 
         # Quotes column names for use in SQL queries.
         def quote_column_name(name) # :nodoc:
-          PG::Connection.quote_ident(name.to_s)
+          QUOTED_COLUMN_NAMES[name] ||= PG::Connection.quote_ident(name.to_s)
         end
 
         # Quotes schema names for use in SQL queries.
