@@ -6,7 +6,7 @@ module ActiveRecord
       module DatabaseStatements
         def explain(arel, binds = [])
           sql = "EXPLAIN #{to_sql(arel, binds)}"
-          ExplainPrettyPrinter.new.pp(exec_query(sql, 'EXPLAIN', binds))
+          ExplainPrettyPrinter.new.pp(internal_exec_query(sql, 'EXPLAIN', binds))
         end
 
         class ExplainPrettyPrinter # :nodoc:
@@ -162,7 +162,7 @@ module ActiveRecord
           end
         end
 
-        def exec_query(sql, name = 'SQL', binds = [], prepare: false)
+        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false)
           execute_and_clear(sql, name, binds, prepare: prepare) do |result|
             types = {}
             fields = result.fields
@@ -180,20 +180,8 @@ module ActiveRecord
         end
         alias exec_update exec_delete
 
-        def sql_for_insert(sql, pk, id_value, sequence_name, binds)
-          if pk.nil?
-            # Extract the table from the insert sql. Yuck.
-            table_ref = extract_table_ref_from_insert_sql(sql)
-            pk = primary_key(table_ref) if table_ref
-          end
-
-          sql = "#{sql} RETURNING #{quote_column_name(pk)}" if pk && use_insert_returning?
-
-          super
-        end
-
-        def exec_insert(sql, name, binds, pk = nil, sequence_name = nil)
-          val = exec_query(sql, name, binds)
+        def exec_insert(sql, name, binds, pk = nil, sequence_name = nil, returning: nil)
+          val = internal_exec_query(sql, name, binds)
           if !use_insert_returning? && pk
             unless sequence_name
               table_ref = extract_table_ref_from_insert_sql(sql)
